@@ -1,0 +1,121 @@
+P00 ARCHITECTURE DECISION 001 — INITIAL CONTRACT VERSION 1
+Date: 2026-11-06
+Status: adopted for isolated implementation; execution feasibility unproven.
+
+Scope and target
+Use C++20 host code, Objective-C++ AppKit code, C Windows fixtures, CMake >=3.24.
+Reference guest: x86-64 PE32+, explicit PrismEntry returning uint32_t, no arguments.
+Reference host: x86-64 macOS process; provisional minimum macOS 14.0.
+First game: project-owned prism-pong.exe from the research's constrained subset.
+The actual host is ARM64 macOS 27.0 (26A428), Apple clang 21.0.0
+(clang-2100.3.34.2), CMake 4.3.2. This is the initial development configuration,
+not evidence that Intel/macOS 14 or any guest binary works.
+
+Allow P01 to evaluate an already available Rosetta x86-64 host experimentally.
+Do not install Rosetta, Wine or a VM, change system security, or declare Rosetta
+a supported runtime dependency in this decision. If unavailable, record the
+blocker and request Intel hardware or a separate architecture decision. Native
+ARM64 instruction translation and Windows ARM64 guests are out of scope.
+P01 must record signing/entitlements and executable-memory behavior. P00 neither
+signs an execution host nor establishes executable-memory permissions.
+
+Contract files and trust
+include/prism/core.hpp: host-only results, diagnostics, typed handles, contexts.
+include/prism/abi.hpp: Windows-width types/layouts and x86-64 callable types.
+include/prism/pe.hpp: inspector, immutable inspected bytes/metadata, resolver,
+  mapping owner and loader declarations. P03 supplies inspect; P05 supplies load.
+include/prism/backend.hpp: P04 native display/event factory and operations.
+All interfaces are internal source contracts, not a stable shared-library ABI.
+No std::string/vector/variant/exception crosses a guest ABI boundary.
+Only explicitly attributed signatures may call guest code or be imports.
+PRISM_HAS_X64_GUEST_ABI is a compile-time availability flag, not a passed gate.
+Foreign adapters catch host failures before returning to guest; no C++ unwinding
+through foreign frames. Guest faults terminate the dedicated worker process.
+
+P03 owns the immutable copied bytes returned by inspect and all validated
+metadata. Imports, names and relocation records own their storage. The input
+span is borrowed only during inspect. The public abstract interface is trusted
+internal code, not a security boundary against a malicious C++ subclass.
+P05 accepts only inspector-produced objects; never reload a path after inspection.
+P05 must still validate host page protection compatibility and address arithmetic.
+Inspect returns Diagnostic on malformed or unsupported requirements, including
+ordinal/delay imports, TLS, CLR, guest DLL images and unsupported relocations.
+Record exception directory metadata without promising Windows unwinding.
+P05 maps headers/sections and zero tails, binds imports and final protections
+before entry; forced relocation must either relocate or explicitly reject.
+No overwriting host mappings or writable/executable page-sharing shortcuts.
+
+ImportResolver borrows DLL/symbol strings for the call. It returns a nonzero
+guest-ABI adapter address or Diagnostic; unknown imports must not resolve to a
+successful stub. Normalize ASCII DLL case only; symbols remain case-sensitive.
+The resolver object may die after binding, but adapter code/state must outlive
+the mapped guest. The sole MappedImage owner releases mappings on destruction,
+only after guest threads/callbacks stop. Its entry address is not an ARM callable.
+
+P06 owns generation-checked typed handle tables. Zero is null; adapters apply
+API-specific failure sentinels (future file APIs may use all bits one).
+Public handle bits never encode native object pointers. Reject stale/wrong-kind
+handles. Guest last-error belongs to GuestThreadContext, never host errno;
+contexts live for the worker/thread and may not be shared unsafely across threads.
+P06 records per-API error preservation and supplies actual adapter signatures.
+Windows struct pointers in layout declarations are uint64 guest addresses;
+adapters validate/use them only in the appropriate execution host.
+
+Thread and resource rules
+One dedicated process per guest; AppKit runs on its main thread, guest on one
+worker thread. P04 owns native windows/views and retained pixel buffers. Its
+Display is created, called, polled and destroyed on main thread. P07 owns main
+thread marshaling and the guest message queue; P04 never invokes guest callbacks.
+P07 creation sequence: request native allocation on main thread, return native
+result to guest thread, invoke guest WM_NCCREATE/WM_CREATE there, roll back native
+window on rejection. Main thread must continue pumping while guest runs and must
+never synchronously wait for guest callback completion. Guest callbacks may
+reenter adapters. Teardown cancels pending operations, drains or rejects stale
+events, stops callbacks, then releases native objects and finally mapped code.
+
+Display events identify WindowId, not HWND. P07 owns the association. Native
+close produces close_requested, not immediate destruction; guest lifecycle
+determines destruction. Focus loss clears backend key state and causes P07 to
+clear guest pressed state. Key repeat is explicit; text/IME are unsupported.
+P04 create supports one fixed-size window; additional windows fail explicitly.
+WindowSpec title is copied. Present accepts only full-size top-down BGRX, matching
+logical client dimensions, with validated span/stride arithmetic. Copy pixels
+before return, ignore X and supply opaque alpha for native drawing; retain for
+repaint. One source pixel is one logical point; backend scales to backing pixels
+on Retina. P07 handles Windows DIB restrictions and return-value translation.
+No borrowed pixel span survives present; no native event holds a guest pointer.
+
+Fixture agreement for P02
+PrismEntry uses uint32_t(void), Windows x64 convention, custom linker entry.
+Probe calls OutputDebugStringA from KERNEL32.DLL and returns a fixed documented
+value. P01 may use a private bootstrap fixture/import for checked ABI results.
+Window then Pong fixtures use only the research section 6 proposed kernel,
+USER32 and StretchDIBits subset; actual imports/disassembly must be recorded.
+Use plain C, no CRT/TLS/dynamic loading/exceptions, small stack frames, fixed
+32-bit top-down BI_RGB DIB, DIB_RGB_COLORS/SRCCOPY, one fixed logical window.
+QPC frequency contract is 1,000,000,000 ticks/sec; no wall-clock semantics.
+P02 owns C declarations/build scripts and must compare layouts against these
+contracts; shared C++ headers are not intended to compile into the C fixture.
+
+Build coordination
+cmake -S . -B build/p03 -DPRISM_BUILD_P03=ON enables owned P03 directories.
+Link host targets PRIVATE prism::contracts. Register add_test entries with label
+P03 and call prism_add_component_check(P03 target1 target2) once, after those
+targets exist. This provides check-p03 and fails when no tests are registered.
+Use the equivalent ID for other registered components. These options select
+builds, not permission to bypass dependencies. Missing selected components fail.
+Owners create their component CMakeLists.txt in the pre-registered paths;
+P00 created only shared CMakeLists files, leaving component-owned paths untouched.
+P04 enables OBJCXX in its component on Apple platforms and links its frameworks.
+P06 owns src/win32/kernel32/CMakeLists.txt initially; P09 must coordinate changes
+there. P08-P12 registration waits for their prerequisites and scoped interfaces.
+
+Contract migration
+Propose exact signature/layout/lifetime change, affected consumers and migration.
+Coordinator updates version and consumers together before dependent integration.
+P01-P04 and P06 may start isolated work from v1; none is implicitly verified.
+Checklist remains unchanged: this setup does not launch a Windows program.
+
+Layout clarification (2026-11-06): public contracts stay in include/prism/.
+Their P00 checks and test build rules live in tests/contracts/, registered by
+root CMake. This relocation does not change contract version 1.

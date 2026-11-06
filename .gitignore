@@ -1,0 +1,4 @@
+docs/.PROJECT_ASSIGNMENTS.lock
+docs/.assignments-*
+build/
+.DS_Store
