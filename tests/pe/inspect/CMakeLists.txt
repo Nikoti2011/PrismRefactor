@@ -1,0 +1,8 @@
+if(BUILD_TESTING)
+  add_executable(prism_pe_inspect_tests inspect_tests.cpp)
+  target_link_libraries(prism_pe_inspect_tests PRIVATE prism::pe_inspect)
+  target_compile_options(prism_pe_inspect_tests PRIVATE -Wall -Wextra -Wpedantic)
+  add_test(NAME prism.pe.inspect COMMAND prism_pe_inspect_tests)
+  set_tests_properties(prism.pe.inspect PROPERTIES LABELS P03)
+  prism_add_component_check(P03 prism_pe_inspect_tests)
+endif()
