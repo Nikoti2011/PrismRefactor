@@ -1,0 +1,8 @@
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_package(Threads REQUIRED)
+add_executable(prism_kernel32_core_tests core_tests.cpp)
+target_link_libraries(prism_kernel32_core_tests PRIVATE prism::kernel32_core Threads::Threads)
+add_test(NAME prism.kernel32.core COMMAND prism_kernel32_core_tests)
+add_test(NAME prism.kernel32.process COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/process_tests.py" "$<TARGET_FILE:prism_kernel32_core_tests>")
+set_tests_properties(prism.kernel32.core prism.kernel32.process PROPERTIES LABELS P06 TIMEOUT 20)
+prism_add_component_check(P06 prism_runtime_tests prism_kernel32_core_tests)
