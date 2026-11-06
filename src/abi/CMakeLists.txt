@@ -1,0 +1,7 @@
+if(NOT APPLE OR NOT CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
+  message(FATAL_ERROR "P01 requires macOS with -DCMAKE_OSX_ARCHITECTURES=x86_64; native ARM guest calls are unsupported")
+endif()
+add_library(prism_abi STATIC bridge.cpp)
+add_library(prism::abi ALIAS prism_abi)
+target_link_libraries(prism_abi PUBLIC prism::contracts)
+target_include_directories(prism_abi PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
