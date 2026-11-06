@@ -1,0 +1,9 @@
+dll,symbol,signature,status,supported_subset,test,evidence,known_gaps
+KERNEL32.DLL,GetModuleHandleW,HANDLE(WCHAR const*),partial,NULL only; mapped base,check-p06,docs/subprojects/P06.txt,named modules return 126; actual PE integration pending
+KERNEL32.DLL,GetLastError,DWORD(void),partial,per guest thread context,check-p06,docs/subprojects/P06.txt,requires bound context; actual PE integration pending
+KERNEL32.DLL,SetLastError,void(DWORD),partial,per guest thread context,check-p06,docs/subprojects/P06.txt,requires bound context; actual PE integration pending
+KERNEL32.DLL,QueryPerformanceCounter,BOOL(LARGE_INTEGER*),partial,monotonic nanoseconds,check-p06,docs/subprojects/P06.txt,accessible output memory; null rejected; actual PE integration pending
+KERNEL32.DLL,QueryPerformanceFrequency,BOOL(LARGE_INTEGER*),partial,1000000000 ticks/sec,check-p06,docs/subprojects/P06.txt,accessible output memory; null rejected; actual PE integration pending
+KERNEL32.DLL,Sleep,void(DWORD),partial,finite milliseconds and zero yield; EINTR retry,check-p06,docs/subprojects/P06.txt,INFINITE rejected with error 87; actual PE integration pending
+KERNEL32.DLL,OutputDebugStringA,void(char const*),partial,prefixed serialized stderr bytes,check-p06,docs/subprojects/P06.txt,accessible NUL string; no debugger protocol; actual PE integration pending
+KERNEL32.DLL,ExitProcess,void(DWORD),partial,terminate dedicated worker; log full DWORD,check-p06,docs/subprojects/P06.txt,POSIX exit status low eight bits; no DLL detach; actual PE integration pending

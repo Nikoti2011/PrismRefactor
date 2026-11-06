@@ -1,0 +1,39 @@
+P06 core KERNEL32 subset and integration
+
+Link prism::kernel32_core and include win32/kernel32/core.hpp. register_core
+adds eight exact named imports to an existing runtime::Registry transactionally.
+Only x86-64 builds expose guest adapters; ARM64 returns execution_unavailable.
+The caller configures a GuestProcessContext with the actual mapped image base,
+creates a per-worker GuestThreadContext and holds runtime::ContextScope while
+entering the PE or dispatching guest callbacks. Missing context is a host
+programming error: adapters abort with a diagnostic, never invent guest state.
+All guest adapters are explicitly ms_abi and noexcept. The native service layer
+is separately callable/testable on ARM64 and does not establish ARM64 guest ABI.
+
+Supported services / errors:
+  GetModuleHandleW(NULL): mapped base, preserves last-error. Named modules and
+    absent image base return zero and ERROR_MOD_NOT_FOUND (126); no DLL loading.
+  GetLastError/SetLastError: exact per-context DWORD, no host errno coupling.
+  QueryPerformanceFrequency: 1,000,000,000. QueryPerformanceCounter: monotonic
+    nanoseconds. Null output returns FALSE/87; native/overflow failure FALSE/31.
+    Success preserves last-error. No wall-clock or Windows boot-epoch promise.
+  Sleep: finite DWORD milliseconds; zero yields; interrupted nanosleep resumes
+    remaining duration. Success preserves error, native failure sets 31.
+    INFINITE (0xffffffff) is unsupported and returns with error 87; no claim of
+    full Sleep semantics. Timing/scheduler precision is not guaranteed.
+  OutputDebugStringA: accessible NUL-terminated bytes to stderr, serialized with
+    '[prism guest] ' prefix and a newline. Not a debugger protocol or encoding
+    conversion. Null sets 87, detected stdio failure sets 31; success preserves.
+  ExitProcess: flush diagnostic containing full unsigned DWORD, then _Exit of
+    dedicated worker, bypassing destructors/atexit. POSIX wait exposes low eight
+    bits; diagnostics retain full code. Launcher must not misreport a truncated
+    exit code as the full Windows DWORD. No Windows DLL detach/thread callbacks.
+
+Pointer arguments must refer to accessible memory in the mapped worker process;
+only null is explicitly checked. There is no sandbox or arbitrary-pointer
+validation. Invalid memory faults terminate the worker under the P05 policy.
+No host C++ exception crosses adapters. Native stdio locking, process lifecycle,
+and scheduler behavior are the documented narrow mapping, not full Windows.
+
+P09 owns files.*. This component CMakeLists currently builds only core.cpp;
+coordinate its extension with P06/P00. Do not add file APIs to core.*.

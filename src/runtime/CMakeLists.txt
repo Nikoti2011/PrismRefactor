@@ -1,0 +1,5 @@
+add_library(prism_runtime runtime.cpp)
+add_library(prism::runtime ALIAS prism_runtime)
+target_link_libraries(prism_runtime PUBLIC prism::contracts)
+target_include_directories(prism_runtime PUBLIC "${PROJECT_SOURCE_DIR}/src")
+target_compile_options(prism_runtime PRIVATE -Wall -Wextra -Wpedantic)

@@ -1,0 +1,5 @@
+find_package(Threads REQUIRED)
+add_executable(prism_runtime_tests runtime_tests.cpp)
+target_link_libraries(prism_runtime_tests PRIVATE prism::runtime Threads::Threads)
+add_test(NAME prism.runtime COMMAND prism_runtime_tests)
+set_tests_properties(prism.runtime PROPERTIES LABELS P06)
