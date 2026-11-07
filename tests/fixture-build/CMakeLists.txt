@@ -1,0 +1,10 @@
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_executable(prism_fixture_game_tests game_tests.c)
+target_compile_options(prism_fixture_game_tests PRIVATE -Wall -Wextra -Werror)
+if(BUILD_TESTING)
+  add_test(NAME prism.fixtures.reproducible COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/verify.py ${PROJECT_BINARY_DIR})
+  add_test(NAME prism.fixtures.game_logic COMMAND prism_fixture_game_tests)
+  set_tests_properties(prism.fixtures.reproducible prism.fixtures.game_logic PROPERTIES LABELS P02)
+endif()
+prism_add_component_check(P02 prism_fixture_game_tests)

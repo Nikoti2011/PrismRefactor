@@ -1,0 +1,117 @@
+{
+  "sha256": "b0b62105dfa62f7177f13aef1fd713ba6e4b4f3c757ced3f9b48ddadecdd9016",
+  "imports": {
+    "KERNEL32.dll": [
+      "OutputDebugStringA"
+    ]
+  },
+  "directories": {
+    "0": {
+      "rva": 0,
+      "size": 0,
+      "description": "Export Directory [.edata (or where ever we found it)]"
+    },
+    "1": {
+      "rva": 98304,
+      "size": 116,
+      "description": "Import Directory [parts of .idata]"
+    },
+    "2": {
+      "rva": 0,
+      "size": 0,
+      "description": "Resource Directory [.rsrc]"
+    },
+    "3": {
+      "rva": 65536,
+      "size": 12,
+      "description": "Exception Directory [.pdata]"
+    },
+    "4": {
+      "rva": 0,
+      "size": 0,
+      "description": "Security Directory"
+    },
+    "5": {
+      "rva": 114688,
+      "size": 12,
+      "description": "Base Relocation Directory [.reloc]"
+    },
+    "6": {
+      "rva": 0,
+      "size": 0,
+      "description": "Debug Directory"
+    },
+    "7": {
+      "rva": 0,
+      "size": 0,
+      "description": "Description Directory"
+    },
+    "8": {
+      "rva": 0,
+      "size": 0,
+      "description": "Special Directory"
+    },
+    "9": {
+      "rva": 0,
+      "size": 0,
+      "description": "Thread Storage Directory [.tls]"
+    },
+    "a": {
+      "rva": 0,
+      "size": 0,
+      "description": "Load Configuration Directory"
+    },
+    "b": {
+      "rva": 0,
+      "size": 0,
+      "description": "Bound Import Directory"
+    },
+    "c": {
+      "rva": 98360,
+      "size": 16,
+      "description": "Import Address Table Directory"
+    },
+    "d": {
+      "rva": 0,
+      "size": 0,
+      "description": "Delay Import Directory"
+    },
+    "e": {
+      "rva": 0,
+      "size": 0,
+      "description": "CLR Runtime Header"
+    },
+    "f": {
+      "rva": 0,
+      "size": 0,
+      "description": "Reserved"
+    }
+  },
+  "entry": "PrismEntry / DWORD(void)",
+  "execution": "Not run on Windows or Prism runtime",
+  "versions": {
+    "gcc": "x86_64-w64-mingw32-gcc (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+    "ld": "GNU ld (GNU Binutils) 2.47.20260726\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis program is free software; you may redistribute it under the terms of\nthe GNU General Public License version 3 or (at your option) a later version.\nThis program has absolutely no warranty.\n",
+    "objdump": "GNU objdump (GNU Binutils) 2.47.20260726\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis program is free software; you may redistribute it under the terms of\nthe GNU General Public License version 3 or (at your option) any later version.\nThis program has absolutely no warranty.\n"
+  },
+  "recipe": "python3 tools/fixtures/build.py build/p02/fixtures",
+  "notes": "Reviewed disassembly: no CRT/helpers/TLS/GS accesses; unwind flags none. REPO denotes repository root.",
+  "command": [
+    "/opt/homebrew/bin/x86_64-w64-mingw32-gcc",
+    "-std=c11",
+    "-Os",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-ffreestanding",
+    "-fno-builtin",
+    "-fno-stack-protector",
+    "-fno-ident",
+    "-nostdlib",
+    "-Wl,--entry,PrismEntry,--subsystem,windows,--no-insert-timestamp,--image-base,0x180000000,--section-alignment,16384",
+    "${REPO}/fixtures/windows/core/probe/main.c",
+    "-o",
+    "${REPO}/build/p02/fixtures/probe/prism-probe.exe",
+    "-lkernel32"
+  ]
+}
